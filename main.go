@@ -9,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/sashabaranov/go-openai"
 	"golang.org/x/oauth2/google"
@@ -34,6 +35,15 @@ func NewServer(config Config) *Server {
 }
 
 func (s *Server) setupRoutes() {
+	s.router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"},
+		AllowHeaders:     []string{"*"},
+		ExposeHeaders:    []string{"*"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
+
 	s.router.POST("/v1/chat/completions", s.handleChatCompletions)
 	s.router.OPTIONS("/v1/chat/completions", s.handleOptions)
 	// Add more OpenAI-compatible endpoints as needed
@@ -129,3 +139,5 @@ func main() {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 }
+
+//https://us-central1-aiplatform.googleapis.com/v1beta1/projects/ca-observability-gemi-dev-i8pt/locations/us-central1/endpoints/openapi
