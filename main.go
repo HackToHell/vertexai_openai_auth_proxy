@@ -35,6 +35,7 @@ func NewServer(config Config) *Server {
 
 func (s *Server) setupRoutes() {
 	s.router.POST("/v1/chat/completions", s.handleChatCompletions)
+	s.router.OPTIONS("/v1/chat/completions", s.handleOptions)
 	// Add more OpenAI-compatible endpoints as needed
 }
 
@@ -60,6 +61,10 @@ func (s *Server) refreshCredentials(ctx context.Context) error {
 	}()
 
 	return nil
+}
+
+func (s *Server) handleOptions(c *gin.Context) {
+	c.Status(http.StatusOK)
 }
 
 func (s *Server) handleChatCompletions(c *gin.Context) {
