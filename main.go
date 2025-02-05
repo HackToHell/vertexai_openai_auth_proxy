@@ -34,6 +34,61 @@ func NewServer(config Config) *Server {
 	}
 }
 
+type ModelObject struct {
+	ID      string `json:"id"`
+	Object  string `json:"object"`
+	Created int64  `json:"created"`
+	OwnedBy string `json:"owned_by"`
+}
+
+type ModelList struct {
+	Object string        `json:"object"`
+	Data   []ModelObject `json:"data"`
+}
+
+// Define available models as a package-level constant
+var AvailableModels = map[string]ModelObject{
+	"google/gemini-2.0-flash-001": {
+		ID:      "google/gemini-2.0-flash-001",
+		Object:  "model",
+		Created: 1706745600, // February 1, 2024
+		OwnedBy: "google",
+	},
+}
+
+// Simplified handlers using the single source of truth
+func (s *Server) handleListModels(c *gin.Context) {
+	modelList := ModelList{
+		Object: "list",
+		Data:   make([]ModelObject, 0, len(AvailableModels)),
+	}
+
+	for _, model := range AvailableModels {
+		modelList.Data = append(modelList.Data, model)
+	}
+
+	c.JSON(http.StatusOK, modelList)
+}
+
+func (s *Server) handleRetrieveModel(c *gin.Context) {
+	modelID := c.Param("model")
+
+	model, exists := AvailableModels[modelID]
+	if !exists {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": gin.H{
+				"message": "The model '" + modelID + "' does not exist",
+				"type":    "invalid_request_error",
+				"param":   nil,
+				"code":    "model_not_found",
+			},
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, model)
+}
+
 func (s *Server) setupRoutes() {
 	s.router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"*"},
@@ -46,6 +101,8 @@ func (s *Server) setupRoutes() {
 
 	s.router.POST("/v1/chat/completions", s.handleChatCompletions)
 	s.router.OPTIONS("/v1/chat/completions", s.handleOptions)
+	s.router.GET("/v1/models", s.handleListModels)
+	s.router.GET("/v1/models/:model", s.handleRetrieveModel)
 	// Add more OpenAI-compatible endpoints as needed
 }
 
